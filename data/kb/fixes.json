@@ -1,0 +1,461 @@
+[
+  {
+    "issue": "Database Connection Timeout",
+    "root_cause": "Connection pool exhausted or slow queries",
+    "solution": "Increase DB pool size and optimize long-running queries",
+    "affected_components": [
+      "Database"
+    ],
+    "tags": [
+      "timeout",
+      "database"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "SIP Registration Failed",
+    "root_cause": "SIP server unreachable or auth failure",
+    "solution": "Verify SIP credentials and restart SIP service",
+    "affected_components": [
+      "Voice"
+    ],
+    "tags": [
+      "sip",
+      "network"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "API Request Timeout",
+    "root_cause": "External API latency or network delay",
+    "solution": "Add retry logic and increase timeout threshold",
+    "affected_components": [
+      "API"
+    ],
+    "tags": [
+      "timeout",
+      "latency"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "High CPU Usage",
+    "root_cause": "Infinite loop or heavy computation",
+    "solution": "Profile code and optimize CPU-intensive logic",
+    "affected_components": [
+      "Application"
+    ],
+    "tags": [
+      "performance",
+      "cpu"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Memory Leak Detected",
+    "root_cause": "Objects not released properly",
+    "solution": "Use memory profiler and fix object lifecycle",
+    "affected_components": [
+      "Application"
+    ],
+    "tags": [
+      "memory",
+      "leak"
+    ],
+    "severity": "Critical",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Disk Space Full",
+    "root_cause": "Logs growing without rotation",
+    "solution": "Enable log rotation and cleanup old files",
+    "affected_components": [
+      "System"
+    ],
+    "tags": [
+      "disk",
+      "storage"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Service Crash on Startup",
+    "root_cause": "Missing dependency or config error",
+    "solution": "Verify config files and reinstall dependencies",
+    "affected_components": [
+      "Application"
+    ],
+    "tags": [
+      "crash",
+      "startup"
+    ],
+    "severity": "Critical",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Authentication Failed",
+    "root_cause": "Expired credentials or token mismatch",
+    "solution": "Renew credentials and sync auth configuration",
+    "affected_components": [
+      "AuthService"
+    ],
+    "tags": [
+      "security",
+      "auth"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Configuration Mismatch",
+    "root_cause": "Version mismatch across services",
+    "solution": "Align service versions and configs",
+    "affected_components": [
+      "System"
+    ],
+    "tags": [
+      "configuration",
+      "version"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Network Latency Spike",
+    "root_cause": "Firewall or routing issue",
+    "solution": "Check firewall rules and network routes",
+    "affected_components": [
+      "Network"
+    ],
+    "tags": [
+      "latency",
+      "connectivity"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Database Deadlock",
+    "root_cause": "Concurrent transactions blocking each other",
+    "solution": "Optimize transaction isolation and queries",
+    "affected_components": [
+      "Database"
+    ],
+    "tags": [
+      "deadlock",
+      "transaction"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "API 500 Internal Error",
+    "root_cause": "Unhandled exception in backend",
+    "solution": "Check stack trace and add error handling",
+    "affected_components": [
+      "API"
+    ],
+    "tags": [
+      "server",
+      "error"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Cache Miss Storm",
+    "root_cause": "Cache eviction misconfiguration",
+    "solution": "Increase cache size and tune eviction policy",
+    "affected_components": [
+      "Cache"
+    ],
+    "tags": [
+      "performance",
+      "cache"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Thread Pool Exhausted",
+    "root_cause": "Too many concurrent requests",
+    "solution": "Increase thread pool size and add rate limiting",
+    "affected_components": [
+      "System"
+    ],
+    "tags": [
+      "threading",
+      "load"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "File Permission Denied",
+    "root_cause": "Incorrect OS permissions",
+    "solution": "Update file permissions and ownership",
+    "affected_components": [
+      "System"
+    ],
+    "tags": [
+      "permission",
+      "filesystem"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "SSL Handshake Failure",
+    "root_cause": "Invalid certificate or expiry",
+    "solution": "Renew SSL certificate and update trust store",
+    "affected_components": [
+      "Security"
+    ],
+    "tags": [
+      "ssl",
+      "certificate"
+    ],
+    "severity": "Critical",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Message Queue Backlog",
+    "root_cause": "Consumer lag or slow processing",
+    "solution": "Scale consumers and optimize message handling",
+    "affected_components": [
+      "Queue"
+    ],
+    "tags": [
+      "messaging",
+      "performance"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Service Dependency Down",
+    "root_cause": "Dependent service unavailable",
+    "solution": "Restart dependency and add health checks",
+    "affected_components": [
+      "System"
+    ],
+    "tags": [
+      "dependency",
+      "availability"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Load Balancer Misroute",
+    "root_cause": "Incorrect routing rules",
+    "solution": "Fix load balancer listener rules",
+    "affected_components": [
+      "Network"
+    ],
+    "tags": [
+      "loadbalancer",
+      "routing"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "DNS Resolution Failure",
+    "root_cause": "Incorrect DNS config",
+    "solution": "Update DNS records and flush cache",
+    "affected_components": [
+      "Network"
+    ],
+    "tags": [
+      "dns",
+      "network"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Backup Job Failed",
+    "root_cause": "Storage access issue",
+    "solution": "Verify backup path and permissions",
+    "affected_components": [
+      "System"
+    ],
+    "tags": [
+      "backup",
+      "storage"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Data Corruption Detected",
+    "root_cause": "Improper shutdown or disk error",
+    "solution": "Restore from backup and run integrity checks",
+    "affected_components": [
+      "Database"
+    ],
+    "tags": [
+      "corruption",
+      "recovery"
+    ],
+    "severity": "Critical",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Rate Limit Exceeded",
+    "root_cause": "Too many API requests",
+    "solution": "Apply client-side throttling",
+    "affected_components": [
+      "API"
+    ],
+    "tags": [
+      "rate-limit",
+      "traffic"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Session Expired Error",
+    "root_cause": "Session timeout too low",
+    "solution": "Increase session TTL and refresh logic",
+    "affected_components": [
+      "Application"
+    ],
+    "tags": [
+      "session",
+      "auth"
+    ],
+    "severity": "Low",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Log Ingestion Failure",
+    "root_cause": "Incorrect log format",
+    "solution": "Fix log parser and schema",
+    "affected_components": [
+      "System"
+    ],
+    "tags": [
+      "logs",
+      "ingestion"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Health Check Failed",
+    "root_cause": "Incorrect health endpoint config",
+    "solution": "Fix health endpoint and monitoring rules",
+    "affected_components": [
+      "Monitoring"
+    ],
+    "tags": [
+      "healthcheck",
+      "service"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Service Startup Delay",
+    "root_cause": "Slow dependency initialization",
+    "solution": "Optimize startup sequence",
+    "affected_components": [
+      "Application"
+    ],
+    "tags": [
+      "startup",
+      "delay"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Index Rebuild Slow",
+    "root_cause": "Large dataset size",
+    "solution": "Schedule indexing during off-peak hours",
+    "affected_components": [
+      "Database"
+    ],
+    "tags": [
+      "index",
+      "performance"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Webhook Delivery Failed",
+    "root_cause": "Endpoint unreachable",
+    "solution": "Verify webhook URL and retry logic",
+    "affected_components": [
+      "API"
+    ],
+    "tags": [
+      "webhook",
+      "network"
+    ],
+    "severity": "Medium",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": "Configuration Drift Detected",
+    "root_cause": "Manual config changes",
+    "solution": "Enforce config management policy",
+    "affected_components": [
+      "System"
+    ],
+    "tags": [
+      "configuration",
+      "drift"
+    ],
+    "severity": "High",
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": NaN,
+    "root_cause": NaN,
+    "solution": NaN,
+    "affected_components": [
+      "nan"
+    ],
+    "tags": [
+      "nan"
+    ],
+    "severity": NaN,
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": NaN,
+    "root_cause": NaN,
+    "solution": NaN,
+    "affected_components": [
+      "nan"
+    ],
+    "tags": [
+      "nan"
+    ],
+    "severity": NaN,
+    "resolution_time": "1 hour"
+  },
+  {
+    "issue": NaN,
+    "root_cause": NaN,
+    "solution": NaN,
+    "affected_components": [
+      "nan"
+    ],
+    "tags": [
+      "nan"
+    ],
+    "severity": NaN,
+    "resolution_time": "1 hour"
+  }
+]

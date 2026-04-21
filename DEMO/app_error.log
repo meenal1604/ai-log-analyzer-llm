@@ -1,0 +1,6 @@
+2026-04-20 10:15:23 INFO  Starting application service
+2026-04-20 10:15:25 INFO  Connecting to database
+2026-04-20 10:15:27 ERROR Database connection timeout after 30s
+2026-04-20 10:15:27 WARN  Retrying database connection
+2026-04-20 10:15:30 ERROR Database connection failed
+2026-04-20 10:15:31 INFO  Shutting down service

@@ -1,0 +1,6 @@
+2026-04-20 11:02:10 INFO  API request received: /user/login
+2026-04-20 11:02:10 INFO  Validating credentials
+2026-04-20 11:02:11 ERROR Authentication service unavailable
+2026-04-20 11:02:11 ERROR HTTP 500 Internal Server Error
+2026-04-20 11:02:12 WARN  Retrying API request
+2026-04-20 11:02:15 ERROR API request failed after retry

@@ -1,0 +1,5 @@
+2026-04-20 12:30:01 INFO  Processing batch job
+2026-04-20 12:30:05 WARN  High memory usage detected: 85%
+2026-04-20 12:30:10 WARN  CPU usage spike: 92%
+2026-04-20 12:30:20 ERROR Batch job timeout after 120s
+2026-04-20 12:30:21 INFO  Restarting batch job

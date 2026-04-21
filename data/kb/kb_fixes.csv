@@ -1,0 +1,34 @@
+issue,root_cause,solution,affected_components,tags,severity,prevention
+Database Connection Timeout,Connection pool exhausted or slow queries,Increase DB pool size and optimize long-running queries,Database,"timeout,database",High,Monitor DB connections and tune queries regularly
+SIP Registration Failed,SIP server unreachable or auth failure,Verify SIP credentials and restart SIP service,Voice,"sip,network",High,Enable SIP health checks and credential rotation
+API Request Timeout,External API latency or network delay,Add retry logic and increase timeout threshold,API,"timeout,latency",Medium,Use circuit breakers and fallback APIs
+High CPU Usage,Infinite loop or heavy computation,Profile code and optimize CPU-intensive logic,Application,"performance,cpu",High,Continuous performance profiling
+Memory Leak Detected,Objects not released properly,Use memory profiler and fix object lifecycle,Application,"memory,leak",Critical,Periodic memory testing and GC monitoring
+Disk Space Full,Logs growing without rotation,Enable log rotation and cleanup old files,System,"disk,storage",High,Configure automated log rotation
+Service Crash on Startup,Missing dependency or config error,Verify config files and reinstall dependencies,Application,"crash,startup",Critical,Validate configs during deployment
+Authentication Failed,Expired credentials or token mismatch,Renew credentials and sync auth configuration,AuthService,"security,auth",High,Automate credential expiry alerts
+Configuration Mismatch,Version mismatch across services,Align service versions and configs,System,"configuration,version",Medium,Centralized configuration management
+Network Latency Spike,Firewall or routing issue,Check firewall rules and network routes,Network,"latency,connectivity",Medium,Network monitoring and traffic analysis
+Database Deadlock,Concurrent transactions blocking each other,Optimize transaction isolation and queries,Database,"deadlock,transaction",High,Review DB locking strategies
+API 500 Internal Error,Unhandled exception in backend,Check stack trace and add error handling,API,"server,error",High,Global exception handling
+Cache Miss Storm,Cache eviction misconfiguration,Increase cache size and tune eviction policy,Cache,"performance,cache",Medium,Cache hit-rate monitoring
+Thread Pool Exhausted,Too many concurrent requests,Increase thread pool size and add rate limiting,System,"threading,load",High,Apply rate limits and autoscaling
+File Permission Denied,Incorrect OS permissions,Update file permissions and ownership,System,"permission,filesystem",Medium,Use least-privilege policies
+SSL Handshake Failure,Invalid certificate or expiry,Renew SSL certificate and update trust store,Security,"ssl,certificate",Critical,Certificate expiry monitoring
+Message Queue Backlog,Consumer lag or slow processing,Scale consumers and optimize message handling,Queue,"messaging,performance",Medium,Queue depth alerts
+Service Dependency Down,Dependent service unavailable,Restart dependency and add health checks,System,"dependency,availability",High,Dependency health monitoring
+Load Balancer Misroute,Incorrect routing rules,Fix load balancer listener rules,Network,"loadbalancer,routing",Medium,Regular LB config audits
+DNS Resolution Failure,Incorrect DNS config,Update DNS records and flush cache,Network,"dns,network",High,DNS redundancy
+Backup Job Failed,Storage access issue,Verify backup path and permissions,System,"backup,storage",High,Backup validation jobs
+Data Corruption Detected,Improper shutdown or disk error,Restore from backup and run integrity checks,Database,"corruption,recovery",Critical,Graceful shutdown handling
+Rate Limit Exceeded,Too many API requests,Apply client-side throttling,API,"rate-limit,traffic",Medium,API gateway throttling
+Session Expired Error,Session timeout too low,Increase session TTL and refresh logic,Application,"session,auth",Low,User activity-based refresh
+Log Ingestion Failure,Incorrect log format,Fix log parser and schema,System,"logs,ingestion",Medium,Log schema validation
+Health Check Failed,Incorrect health endpoint config,Fix health endpoint and monitoring rules,Monitoring,"healthcheck,service",High,Standard health endpoints
+Service Startup Delay,Slow dependency initialization,Optimize startup sequence,Application,"startup,delay",Medium,Lazy loading dependencies
+Index Rebuild Slow,Large dataset size,Schedule indexing during off-peak hours,Database,"index,performance",Medium,Incremental indexing
+Webhook Delivery Failed,Endpoint unreachable,Verify webhook URL and retry logic,API,"webhook,network",Medium,Retry + dead letter queues
+Configuration Drift Detected,Manual config changes,Enforce config management policy,System,"configuration,drift",High,Infrastructure as Code
+,,,,,,
+,,,,,,
+,,,,,,
