@@ -30,7 +30,11 @@ This project automates log analysis using AI to:
 2. Anomaly detection  
 3. Pattern analysis  
 4. Root cause generation using LLM  
-5. Suggested fixes  
+5. Suggested fixes
+
+
+## 📂 Sample Logs
+Demo logs available in `ipc/log/demo/`
 
 
 
@@ -39,4 +43,10 @@ This project automates log analysis using AI to:
 - Streamlit  
 - AWS Bedrock (LLM)  
 - FAISS (vector search)  
-- Pandas  
+- Pandas
+
+## ▶️ How to Run
+git clone https://github.com/meenal1604/ai-log-analyzer-llm
+cd ai-log-analyzer-llm
+pip install -r requirements.txt
+streamlit run app.py
