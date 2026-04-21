@@ -46,7 +46,7 @@ Demo logs available in `ipc/log/demo/`
 - Pandas
 
 ## ▶️ How to Run
-git clone https://github.com/meenal1604/ai-log-analyzer-llm
-cd ai-log-analyzer-llm
-pip install -r requirements.txt
-streamlit run app.py
+-git clone https://github.com/meenal1604/ai-log-analyzer-llm
+-cd ai-log-analyzer-llm
+-pip install -r requirements.txt
+-streamlit run app.py
