@@ -53,3 +53,7 @@ Demo logs available in `ipc/log/demo/`
 -pip install -r requirements.txt
 
 -streamlit run app.py
+
+⚠️ Note:
+AWS Bedrock credentials are required for LLM-based analysis.
+Without credentials, the application will still run but AI features may be limited.
