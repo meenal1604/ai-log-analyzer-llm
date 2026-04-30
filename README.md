@@ -45,6 +45,17 @@ Demo logs available in `ipc/log/demo/`
 - FAISS (vector search)  
 - Pandas
 
+
+
+## 🚀 Recent Enhancements
+- Improved LLM prompt for structured RCA (Root Cause, Impact, Fix, Confidence)
+- Added log classification (Timeout, Network, Application)
+- Enhanced RAG with metadata filtering for accurate retrieval
+- Support for multi-log analysis and file uploads
+- Added anomaly detection and trend visualization
+
+
+
 ## ▶️ How to Run
 -git clone https://github.com/meenal1604/ai-log-analyzer-llm
 
