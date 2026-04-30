@@ -1,17 +1,16 @@
-import boto3
-import os
-from dotenv import load_dotenv
+from src.services.bedrock_llm import BedrockLLM
 
-load_dotenv()
 
-print("Region:", os.getenv("AWS_DEFAULT_REGION"))
+llm = BedrockLLM()
+ok, error = llm.health_check()
 
-client = boto3.client(
-    service_name="bedrock-runtime",
-    region_name=os.getenv("AWS_DEFAULT_REGION")
-)
+print("Region:", llm.region)
 
-response = client.list_foundation_models()
-
-print("✅ Bedrock is accessible")
-print("Available models count:", len(response.get("modelSummaries", [])))
+if ok:
+    print("Bedrock LLM is accessible")
+    print("Active model:", llm.active_model_id)
+else:
+    print("Bedrock LLM is not accessible")
+    print("Primary model:", llm.model_id)
+    print("Fallback models:", ", ".join(llm.fallback_model_ids))
+    print(error)
