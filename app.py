@@ -1,85 +1,181 @@
+
 import streamlit as st
 import plotly.graph_objects as go  
 import plotly.express as px
 import pandas as pd
-import streamlit as st
 from datetime import datetime, timedelta
 import yaml
 import os
+from collections import defaultdict
 from dotenv import load_dotenv
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.ensemble import IsolationForest
-import boto3
-import json
+from src.services.bedrock_llm import BedrockLLM
 
-bedrock_client = boto3.client(
-    service_name="bedrock-runtime",
-    region_name="us-east-1"
-)
+# ✅ LOAD ENV FIRST
+load_dotenv()
+
+# (optional debug — keep for now)
+bedrock_llm = BedrockLLM()
+
+# ✅ ADD THIS BLOCK RIGHT HERE
+try:
+    is_ready, llm_error = bedrock_llm.health_check()
+    st.session_state["llm_ready"] = is_ready
+    st.session_state["llm_error"] = llm_error
+
+except Exception as e:
+    st.session_state["llm_ready"] = False
+    st.session_state["llm_error"] = str(e)
+
+def _legacy_analyze_log_with_llm(log_text):
+    raise RuntimeError("Use analyze_log_with_llm instead.")
+
+
+def classify_log(log):
+    log_lower = log.lower()
+    if "timeout" in log_lower:
+        return "Timeout Issue"
+    elif "connection" in log_lower:
+        return "Network Issue"
+    elif "error" in log_lower:
+        return "Application Error"
+    return "Other"
+ 
 def analyze_log_with_llm(log_text):
-    prompt = f"""
-    Analyze the following log and tell:
-    1. Is it anomaly or normal?
-    2. Root cause
-    3. Suggested fix
+    try:
+        prompt = f"""
+You are a production support expert analyzing enterprise application logs.
 
-    Log:
-    {log_text}
-    """
+Analyze the following log and provide a concise, demo-ready RCA.
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "max_tokens": 200
-    })
+Return the answer in this exact structure:
 
-    response = bedrock_client.invoke_model(
-        modelId="anthropic.claude-3-haiku-20240307-v1:0",
-        body=body
-    )
+### Root Cause
+- Identify the most likely technical cause.
+- Mention the specific service/component if visible.
 
-    result = json.loads(response["body"].read())
-    return result["content"][0]["text"]
-def detect_error_anomaly(structured_logs, threshold=5):
-    # Count error logs
-    error_lines = [
+### Impact Level
+- Low, Medium, or High.
+- Give one short reason for the rating.
+
+### Suggested Fix
+- Provide practical remediation steps an operations team can take.
+
+### Confidence Level
+- Low, Medium, or High.
+- Explain what evidence in the log supports the confidence.
+
+### Evidence From Log
+- Quote or summarize the key log signals that led to the conclusion.
+
+Rules:
+- Do not invent services, timestamps, or error codes that are not present.
+- If the log is insufficient, say what additional evidence is needed.
+- Keep the answer clear and production-support focused.
+
+Log:
+{log_text}
+"""
+        result = bedrock_llm.generate(prompt, max_tokens=600, temperature=0.2)
+        st.session_state["llm_ready"] = True
+        st.session_state["llm_error"] = ""
+        return result
+    except Exception as e:
+        import traceback
+        st.session_state["llm_ready"] = False
+        st.session_state["llm_error"] = str(e)
+        return f"LLM Error:\n{traceback.format_exc()}"
+
+
+def detect_error_anomaly(structured_logs, threshold=5, bucket_minutes=5):
+    error_logs = [
         log for log in structured_logs
-        if "error" in str(log).lower()
+        if getattr(log, "log_level", "").upper() == "ERROR"
+        or "error" in str(log).lower()
     ]
+    error_count = len(error_logs)
+    buckets = defaultdict(int)
 
-    error_count = len(error_lines)
+    for log in error_logs:
+        parsed_time = parse_log_timestamp(getattr(log, "timestamp", None))
+        if not parsed_time:
+            continue
+        bucket_minute = (parsed_time.minute // bucket_minutes) * bucket_minutes
+        bucket_time = parsed_time.replace(minute=bucket_minute, second=0, microsecond=0)
+        buckets[bucket_time] += 1
 
-    if error_count > threshold:
-        explanation = f"""
-An anomaly has been detected in the system logs.
+    spike_time = None
+    spike_count = 0
+    if buckets:
+        spike_time, spike_count = max(buckets.items(), key=lambda item: item[1])
 
-Reason:
-The observed error count ({error_count}) exceeded the predefined threshold ({threshold}).
+    spike_detected = spike_count >= threshold
+    count_anomaly = error_count > threshold
+    anomaly_flag = spike_detected or count_anomaly
 
-This indicates abnormal system behavior such as an error spike,
-unexpected failures, or instability in system operations.
-"""
-        anomaly_flag = True
+    if spike_detected:
+        explanation = (
+            f"Error spike detected at {spike_time.strftime('%I:%M %p')}.\n\n"
+            f"Reason:\n{spike_count} errors occurred within a "
+            f"{bucket_minutes}-minute window, meeting the spike threshold of {threshold}.\n\n"
+            "This indicates concentrated failure activity rather than isolated errors."
+        )
+    elif count_anomaly:
+        explanation = (
+            "An anomaly has been detected in the system logs.\n\n"
+            f"Reason:\nThe observed error count ({error_count}) exceeded the "
+            f"predefined threshold ({threshold}).\n\n"
+            "This indicates abnormal system behavior such as repeated failures "
+            "or operational instability."
+        )
     else:
-        explanation = f"""
-No anomaly detected.
-
-The total error count ({error_count}) is within the acceptable threshold ({threshold}),
-indicating normal system behavior.
-"""
-        anomaly_flag = False
+        explanation = (
+            "No anomaly detected.\n\n"
+            f"The total error count ({error_count}) is within the acceptable "
+            f"threshold ({threshold}), and no time-based error spike was found."
+        )
 
     return {
         "anomaly_detected": anomaly_flag,
         "message": explanation,
         "error_count": error_count,
-        "threshold": threshold
+        "threshold": threshold,
+        "bucket_minutes": bucket_minutes,
+        "spike_detected": spike_detected,
+        "spike_time": spike_time.strftime("%I:%M %p") if spike_time else None,
+        "spike_count": spike_count,
+        "error_frequency": [
+            {
+                "time": bucket_time.strftime("%I:%M %p"),
+                "count": count
+            }
+            for bucket_time, count in sorted(buckets.items())
+        ]
     }
+
+
+def parse_log_timestamp(timestamp):
+    if not timestamp:
+        return None
+    if isinstance(timestamp, datetime):
+        return timestamp
+
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%H:%M:%S",
+        "%H:%M",
+        "%Y-%m-%d",
+    ):
+        try:
+            return datetime.strptime(str(timestamp), fmt)
+        except ValueError:
+            continue
+
+    try:
+        return datetime.fromisoformat(str(timestamp).replace("Z", "+00:00"))
+    except ValueError:
+        return None
 def detect_log_anomalies(logs):
     # Convert logs to numerical vectors
     vectorizer = TfidfVectorizer(max_features=500)
@@ -103,7 +199,6 @@ def detect_log_anomalies(logs):
 
 load_dotenv()
 
-print(os.getenv("AWS_ACCESS_KEY_ID"))
 
 def extract_section(text, section):
     try:
@@ -149,7 +244,6 @@ def analyze_logs(log_data, query=None, rag_engine=None, kb=None):
         'solutions': []
     }
    # -------------------------
-# PROMOTE KB → RECOMMENDED FIX
 # -------------------------
     results['solutions'] = []   # make sure it's initialized
 
@@ -229,20 +323,50 @@ def analyze_logs(log_data, query=None, rag_engine=None, kb=None):
         # Save KB results
         results['kb_solutions'] = kb_solutions[:5]
 
-        # -------------------------
-        # PROMOTE KB → RECOMMENDED FIX
-        # -------------------------
-        for sol in results['kb_solutions']:
-            results['solutions'].append({
-                "error": sol.get("error_type", "Known Issue"),
-                "solution": "\n".join(sol.get("solution_steps", [])),
-                "confidence": sol.get("confidence", "Medium"),
-                "exact_match": True
-            })
+    for sol in results['kb_solutions']:
+        results['solutions'].append({
+            "error": sol.get("error_type", "Known Issue"),
+            "solution": "\n".join(sol.get("solution_steps", [])),
+            "confidence": sol.get("confidence", "Medium"),
+            "exact_match": True
+        })
 
     return results
 
 
+def build_uploaded_log_data(uploaded_files, zone, client, app, version, sub_version):
+    parser = log_reader.parser
+    all_logs = []
+    structured_logs = []
+
+    for uploaded_file in uploaded_files:
+        content = uploaded_file.getvalue().decode("utf-8", errors="ignore")
+        all_logs.append(f"=== Uploaded File: {uploaded_file.name} ===\n{content}")
+
+        for line in content.splitlines():
+            if not line.strip():
+                continue
+            parsed = parser.parse_line(
+                line,
+                zone,
+                client,
+                app,
+                f"{version}/{sub_version}"
+            )
+            if parsed:
+                structured_logs.append(parsed)
+
+    return {
+        "raw": "\n".join(all_logs),
+        "structured": structured_logs,
+        "file_count": len(uploaded_files),
+        "zone": zone,
+        "client": client,
+        "app": app,
+        "version": f"{version}/{sub_version}",
+        "source": "upload",
+        "uploaded_files": [uploaded_file.name for uploaded_file in uploaded_files],
+    }, None
 
 # Page config
 st.set_page_config(
@@ -326,6 +450,8 @@ with st.sidebar:
         st.success("LLM Connected")
     else:
         st.warning("LLM Not Connected")
+        if st.session_state.get("llm_error"):
+            st.caption(st.session_state["llm_error"])
 
     
     # Get available log structure
@@ -350,6 +476,21 @@ with st.sidebar:
     # Sub-version selection
     sub_versions = ["4.0.1", "3.0.1", "4.0.0", "3.0.0"]  # This could be dynamic
     sub_version = st.selectbox(" Sub-Version", sub_versions)
+
+    # Log input source
+    st.markdown("---")
+    log_source = st.radio(
+        "Log Input",
+        ["Use selected log folder", "Upload log files"],
+        horizontal=False
+    )
+    uploaded_logs = []
+    if log_source == "Upload log files":
+        uploaded_logs = st.file_uploader(
+            "Upload log files",
+            type=["log", "txt", "error", "info", "debug"],
+            accept_multiple_files=True
+        )
     
     # Time range
     col1, col2 = st.columns(2)
@@ -394,7 +535,20 @@ with st.sidebar:
 if analyze_btn or 'results' in st.session_state:
     if analyze_btn:
         with st.spinner(" Reading logs..."):
-            log_data, error = log_reader.read_logs(zone, client, app, version, sub_version)
+            if log_source == "Upload log files":
+                if not uploaded_logs:
+                    st.error("Please upload at least one log file.")
+                    st.stop()
+                log_data, error = build_uploaded_log_data(
+                    uploaded_logs,
+                    zone,
+                    client,
+                    app,
+                    version,
+                    sub_version
+                )
+            else:
+                log_data, error = log_reader.read_logs(zone, client, app, version, sub_version)
             
             if error:
                 st.error(f"Error: {error}")
@@ -422,6 +576,7 @@ if analyze_btn or 'results' in st.session_state:
                 if anomaly_result.get("anomaly_detected"):
                     try:
                         sample_log = "\n".join(results.get("error_lines", [])[:5]) or "ERROR: Unknown issue"
+                        results["error_type"] = classify_log(sample_log)
                         llm_output = analyze_log_with_llm(sample_log)
                         results["llm_explanation"] = llm_output
                         st.session_state["llm_ready"] = True
@@ -429,6 +584,7 @@ if analyze_btn or 'results' in st.session_state:
                         results["llm_explanation"] = f"LLM Error: {str(e)}"
                         st.session_state["llm_ready"] = False
                 else:
+                    results["error_type"] = classify_log(log_data.get("raw", ""))
                     results["llm_explanation"] = "No anomaly detected, so no AI explanation generated."
                 
                 # ⏱ Phase 3 – Time-Based Correlation
@@ -456,7 +612,8 @@ if analyze_btn or 'results' in st.session_state:
                     query=query,
                     log_data=log_data,
                     zone=zone,
-                    client=client
+                    client=client,
+                    app=app
                 )
 
             
@@ -465,6 +622,8 @@ if analyze_btn or 'results' in st.session_state:
                 # Merge all results
                 results.update({
                     'rca': rca_result.get('rca', 'No RCA generated'),
+                    'semantic_matches': rca_result.get('semantic_matches', []),
+                    'retrieval_filter': rca_result.get('retrieval_filter', {}),
                     'log_stats': {
                          **results.get('log_stats', {}),
                          'query_matches': rca_result.get('log_stats', {}).get('query_matches', 0)
@@ -479,7 +638,11 @@ if analyze_btn or 'results' in st.session_state:
                 st.session_state.results = results
                 st.session_state.log_data = log_data
                 
-                st.success(f" Analysis complete! Found {len(log_data['structured'])} log entries")
+                source_label = "uploaded files" if log_data.get("source") == "upload" else "selected log folder"
+                st.success(
+                    f" Analysis complete! Found {len(log_data['structured'])} "
+                    f"log entries across {log_data.get('file_count', 0)} {source_label}"
+                )
     else:
         results = st.session_state.results
         log_data = st.session_state.log_data
@@ -503,6 +666,7 @@ if analyze_btn or 'results' in st.session_state:
 
         if results.get("llm_explanation"):
             st.success("LLM Reasoning Active")
+            st.markdown(f"**Error Type:** {results.get('error_type', 'Other')}")
             st.markdown(results["llm_explanation"])
         else:
             st.info("Run analysis to generate AI explanation.")
@@ -570,75 +734,86 @@ if analyze_btn or 'results' in st.session_state:
     else:
         st.success(results["anomaly"]["message"])
 
-        st.write(
-            f"Error Count: {results['anomaly']['error_count']} | "
-        f"Threshold: {results['anomaly']['threshold']}"
+    if results["anomaly"].get("spike_detected"):
+        st.warning(
+            f"Error spike detected at {results['anomaly']['spike_time']} "
+            f"({results['anomaly']['spike_count']} errors in "
+            f"{results['anomaly']['bucket_minutes']} minutes)"
         )
 
-        # Errors Found section - SCROLLABLE GREEN TEXT
-        st.markdown("###  Errors Found")
+    st.write(
+        f"Error Count: {results['anomaly']['error_count']} | "
+        f"Threshold: {results['anomaly']['threshold']}"
+    )
+
+    if results["anomaly"].get("error_frequency"):
+        frequency_df = pd.DataFrame(results["anomaly"]["error_frequency"])
+        st.bar_chart(frequency_df.set_index("time"))
+
+    # Errors Found section - SCROLLABLE GREEN TEXT
+    st.markdown("###  Errors Found")
+    
+    # Get error lines (prioritize exact matches, then similar errors)
+    error_lines = []
+    if 'exact_matches' in results and results['exact_matches']:
+        error_lines = results['exact_matches']
+        st.success(f" Found {len(error_lines)} exact matches")
+    elif 'similar_errors' in results and results['similar_errors']:
+        error_lines = results['similar_errors']
+        st.warning(f" Found {len(error_lines)} similar errors")
+    
+    if error_lines:
+        # Create a scrollable container for error lines
+        max_height = 300  # Maximum height in pixels
+        error_text = ""
         
-        # Get error lines (prioritize exact matches, then similar errors)
-        error_lines = []
-        if 'exact_matches' in results and results['exact_matches']:
-            error_lines = results['exact_matches']
-            st.success(f" Found {len(error_lines)} exact matches")
-        elif 'similar_errors' in results and results['similar_errors']:
-            error_lines = results['similar_errors']
-            st.warning(f" Found {len(error_lines)} similar errors")
+        for i, line in enumerate(error_lines[:10], 1):  # Show first 10 errors
+            # Truncate long lines for the display
+            display_line = line
+            if len(line) > 100:
+                display_line = line[:100] + "..."
+            error_text += f"{i}. {display_line}\n"
         
-        if error_lines:
-            # Create a scrollable container for error lines
-            max_height = 300  # Maximum height in pixels
-            error_text = ""
-            
-            for i, line in enumerate(error_lines[:10], 1):  # Show first 10 errors
-                # Truncate long lines for the display
-                display_line = line
-                if len(line) > 100:
-                    display_line = line[:100] + "..."
-                error_text += f"{i}. {display_line}\n"
-            
-            # Create scrollable text area
-            st.text_area(
-                "Error Details",
-                value=error_text,
-                height=min(max_height, 30 + len(error_lines) * 25),  # Dynamic height
-                key="error_display",
-                disabled=True,  # Read-only
-                label_visibility="collapsed"  # Hide the label
-            )
-            
-            # Show full error details in expandable sections
-            st.markdown("** Full Error Details:**")
-            for i, line in enumerate(error_lines[:5], 1):  # Show first 5 full errors
-                with st.expander(f"Error #{i}", expanded=False):
-                    st.code(line, language='text')
-        else:
-            st.info("No matching errors found")
+        # Create scrollable text area
+        st.text_area(
+            "Error Details",
+            value=error_text,
+            height=min(max_height, 30 + len(error_lines) * 25),  # Dynamic height
+            key="error_display",
+            disabled=True,  # Read-only
+            label_visibility="collapsed"  # Hide the label
+        )
         
-        # Recommended Fix section
-        st.markdown("###  Recommended Fix")
-        
-        if 'solutions' in results and results['solutions']:
-            for i, sol in enumerate(results['solutions'][:2], 1):  # Show first 2 solutions
-                with st.container():
-                    st.markdown(f"**{sol.get('error', 'Issue')}**")
-                    if sol.get('exact_match', False):
-                        st.success(" **Exact match from Knowledge Base**")
-                    
-                    solution_text = sol.get('solution', '')
-                    if solution_text:
-                        # Format as numbered list
-                        lines = solution_text.split('\n')
-                        for j, step in enumerate(lines, 1):
-                            if step.strip():
-                                st.write(f"{j}. {step.strip()}")
-                    st.markdown("---")
-        else:
-            st.info("No specific solution found in Knowledge Base")
-            st.markdown("### 📄 Template RCA (Phase-3)")
-            st.code(results.get("template_rca", "No RCA generated"))
+        # Show full error details in expandable sections
+        st.markdown("** Full Error Details:**")
+        for i, line in enumerate(error_lines[:5], 1):  # Show first 5 full errors
+            with st.expander(f"Error #{i}", expanded=False):
+                st.code(line, language='text')
+    else:
+        st.info("No matching errors found")
+    
+    # Recommended Fix section
+    st.markdown("###  Recommended Fix")
+    
+    if 'solutions' in results and results['solutions']:
+        for i, sol in enumerate(results['solutions'][:2], 1):  # Show first 2 solutions
+            with st.container():
+                st.markdown(f"**{sol.get('error', 'Issue')}**")
+                if sol.get('exact_match', False):
+                    st.success(" **Exact match from Knowledge Base**")
+                
+                solution_text = sol.get('solution', '')
+                if solution_text:
+                    # Format as numbered list
+                    lines = solution_text.split('\n')
+                    for j, step in enumerate(lines, 1):
+                        if step.strip():
+                            st.write(f"{j}. {step.strip()}")
+                st.markdown("---")
+    else:
+        st.info("No specific solution found in Knowledge Base")
+        st.markdown("### 📄 Template RCA (Phase-3)")
+        st.code(results.get("template_rca", "No RCA generated"))
 
 
     with tab2:
@@ -848,6 +1023,18 @@ if analyze_btn or 'results' in st.session_state:
             if 'exact_matches' in results:
                 exact_matches = results['exact_matches']
                 similar_errors = results.get('similar_errors', [])
+                semantic_matches = results.get('semantic_matches', [])
+                retrieval_filter = results.get('retrieval_filter', {})
+
+                if retrieval_filter.get("app"):
+                    st.markdown(f"**RAG Filter:** App = `{retrieval_filter['app']}`")
+
+                if semantic_matches:
+                    st.subheader(" **App-Filtered Semantic Matches**")
+                    for i, match in enumerate(semantic_matches[:3], 1):
+                        label = f"Semantic match #{i} | {match.get('app', 'Unknown')} | score {match.get('similarity', 'N/A')}"
+                        with st.expander(label, expanded=(i == 1)):
+                            st.code(match.get("message", ""))
                 
                 if exact_matches:
                     st.success(f" Found {len(exact_matches)} EXACT matches for your query")
